@@ -16,23 +16,39 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 type NavItem = { to: string; label: string; icon: any };
+type NavGroup = { group?: string; items: NavItem[] };
 
-const ADMIN_NAV: NavItem[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/app/certificates", label: "Certificates", icon: FileCheck2 },
-  { to: "/app/students", label: "Students", icon: Users },
-  { to: "/app/master-data", label: "Master Data", icon: Database },
-  { to: "/app/forms", label: "Forms", icon: FileText },
-  { to: "/app/roles", label: "Roles & Access", icon: ShieldCheck },
-  { to: "/app/reports", label: "Reports", icon: BarChart3 },
-  { to: "/app/audit", label: "Audit Logs", icon: ScrollText },
-  { to: "/app/settings", label: "Settings", icon: Settings },
+const ADMIN_NAV: NavGroup[] = [
+  { items: [{ to: "/app", label: "Dashboard", icon: LayoutDashboard }] },
+  {
+    group: "Verification",
+    items: [
+      { to: "/app/certificates", label: "Certificates", icon: FileCheck2 },
+      { to: "/app/students", label: "Students", icon: Users },
+      { to: "/app/forms", label: "Form Builder", icon: FileText },
+    ]
+  },
+  {
+    group: "System Setup",
+    items: [
+      { to: "/app/master-data", label: "Master Data", icon: Database },
+      { to: "/app/roles", label: "Roles & Users", icon: ShieldCheck },
+    ]
+  },
+  {
+    items: [
+      { to: "/app/audit", label: "Audit Logs", icon: ScrollText },
+      { to: "/app/settings", label: "Settings", icon: Settings },
+    ]
+  }
 ];
 
-const STUDENT_NAV: NavItem[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/app/upload", label: "Upload Certificate", icon: Upload },
-  { to: "/app/my-certificates", label: "My Certificates", icon: History },
+const STUDENT_NAV: NavGroup[] = [
+  { items: [
+    { to: "/app", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/app/upload", label: "Upload Certificate", icon: Upload },
+    { to: "/app/my-certificates", label: "My Certificates", icon: History },
+  ]}
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -41,7 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav = useMemo(() => (me.data?.isAdmin ? ADMIN_NAV : STUDENT_NAV), [me.data?.isAdmin]);
+  const navGroups = useMemo(() => (me.data?.isAdmin ? ADMIN_NAV : STUDENT_NAV), [me.data?.isAdmin]);
   const initials = (me.data?.profile?.full_name ?? me.data?.user.email ?? "?").slice(0, 2).toUpperCase();
 
   return (
@@ -67,24 +83,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button className="rounded-md p-1.5 lg:hidden" onClick={() => setMobileOpen(false)}><X className="h-4 w-4" /></button>
             </div>
 
-            <nav className="mt-4 flex-1 space-y-1 overflow-y-auto px-1">
-              {nav.map((item) => {
-                const active = location.pathname === item.to || (item.to !== "/app" && location.pathname.startsWith(item.to));
-                return (
-                  <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                      active ? "text-primary-foreground" : "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
-                    )}
-                  >
-                    {active && (
-                      <motion.div layoutId="nav-active" className="absolute inset-0 rounded-xl gradient-primary shadow-[var(--shadow-glass)]" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
-                    )}
-                    <item.icon className={cn("relative h-4 w-4", active ? "text-white" : "")} />
-                    <span className={cn("relative", active ? "text-white" : "")}>{item.label}</span>
-                  </Link>
-                );
-              })}
+            <nav className="mt-4 flex-1 space-y-4 overflow-y-auto px-1 scrollbar-hide">
+              {navGroups.map((group, idx) => (
+                <div key={idx}>
+                  {group.group && <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">{group.group}</div>}
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const active = location.pathname === item.to || (item.to !== "/app" && location.pathname.startsWith(item.to));
+                      return (
+                        <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                            active ? "text-primary-foreground" : "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
+                          )}
+                        >
+                          {active && (
+                            <motion.div layoutId="nav-active" className="absolute inset-0 rounded-xl gradient-primary shadow-[var(--shadow-glass)]" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+                          )}
+                          <item.icon className={cn("relative h-4 w-4", active ? "text-white" : "")} />
+                          <span className={cn("relative", active ? "text-white" : "")}>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </nav>
 
             <div className="mt-3 rounded-2xl glass-subtle p-3">

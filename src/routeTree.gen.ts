@@ -23,6 +23,10 @@ import { Route as AppMasterDataRouteImport } from './routes/app.master-data'
 import { Route as AppFormsRouteImport } from './routes/app.forms'
 import { Route as AppCertificatesRouteImport } from './routes/app.certificates'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
+import { Route as AppMasterDataIndexRouteImport } from './routes/app.master-data.index'
+import { Route as AppMasterDataDomainsRouteImport } from './routes/app.master-data.domains'
+import { Route as AppMasterDataCohortsRouteImport } from './routes/app.master-data.cohorts'
+import { Route as AppMasterDataModuleRouteImport } from './routes/app.master-data.$module'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -94,6 +98,26 @@ const AppAuditRoute = AppAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMasterDataIndexRoute = AppMasterDataIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppMasterDataRoute,
+} as any)
+const AppMasterDataDomainsRoute = AppMasterDataDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
+  getParentRoute: () => AppMasterDataRoute,
+} as any)
+const AppMasterDataCohortsRoute = AppMasterDataCohortsRouteImport.update({
+  id: '/cohorts',
+  path: '/cohorts',
+  getParentRoute: () => AppMasterDataRoute,
+} as any)
+const AppMasterDataModuleRoute = AppMasterDataModuleRouteImport.update({
+  id: '/$module',
+  path: '/$module',
+  getParentRoute: () => AppMasterDataRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -102,7 +126,7 @@ export interface FileRoutesByFullPath {
   '/app/audit': typeof AppAuditRoute
   '/app/certificates': typeof AppCertificatesRoute
   '/app/forms': typeof AppFormsRoute
-  '/app/master-data': typeof AppMasterDataRoute
+  '/app/master-data': typeof AppMasterDataRouteWithChildren
   '/app/my-certificates': typeof AppMyCertificatesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/roles': typeof AppRolesRoute
@@ -110,6 +134,10 @@ export interface FileRoutesByFullPath {
   '/app/students': typeof AppStudentsRoute
   '/app/upload': typeof AppUploadRoute
   '/app/': typeof AppIndexRoute
+  '/app/master-data/$module': typeof AppMasterDataModuleRoute
+  '/app/master-data/cohorts': typeof AppMasterDataCohortsRoute
+  '/app/master-data/domains': typeof AppMasterDataDomainsRoute
+  '/app/master-data/': typeof AppMasterDataIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -117,7 +145,6 @@ export interface FileRoutesByTo {
   '/app/audit': typeof AppAuditRoute
   '/app/certificates': typeof AppCertificatesRoute
   '/app/forms': typeof AppFormsRoute
-  '/app/master-data': typeof AppMasterDataRoute
   '/app/my-certificates': typeof AppMyCertificatesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/roles': typeof AppRolesRoute
@@ -125,6 +152,10 @@ export interface FileRoutesByTo {
   '/app/students': typeof AppStudentsRoute
   '/app/upload': typeof AppUploadRoute
   '/app': typeof AppIndexRoute
+  '/app/master-data/$module': typeof AppMasterDataModuleRoute
+  '/app/master-data/cohorts': typeof AppMasterDataCohortsRoute
+  '/app/master-data/domains': typeof AppMasterDataDomainsRoute
+  '/app/master-data': typeof AppMasterDataIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,7 +165,7 @@ export interface FileRoutesById {
   '/app/audit': typeof AppAuditRoute
   '/app/certificates': typeof AppCertificatesRoute
   '/app/forms': typeof AppFormsRoute
-  '/app/master-data': typeof AppMasterDataRoute
+  '/app/master-data': typeof AppMasterDataRouteWithChildren
   '/app/my-certificates': typeof AppMyCertificatesRoute
   '/app/reports': typeof AppReportsRoute
   '/app/roles': typeof AppRolesRoute
@@ -142,6 +173,10 @@ export interface FileRoutesById {
   '/app/students': typeof AppStudentsRoute
   '/app/upload': typeof AppUploadRoute
   '/app/': typeof AppIndexRoute
+  '/app/master-data/$module': typeof AppMasterDataModuleRoute
+  '/app/master-data/cohorts': typeof AppMasterDataCohortsRoute
+  '/app/master-data/domains': typeof AppMasterDataDomainsRoute
+  '/app/master-data/': typeof AppMasterDataIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +195,10 @@ export interface FileRouteTypes {
     | '/app/students'
     | '/app/upload'
     | '/app/'
+    | '/app/master-data/$module'
+    | '/app/master-data/cohorts'
+    | '/app/master-data/domains'
+    | '/app/master-data/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -167,7 +206,6 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/certificates'
     | '/app/forms'
-    | '/app/master-data'
     | '/app/my-certificates'
     | '/app/reports'
     | '/app/roles'
@@ -175,6 +213,10 @@ export interface FileRouteTypes {
     | '/app/students'
     | '/app/upload'
     | '/app'
+    | '/app/master-data/$module'
+    | '/app/master-data/cohorts'
+    | '/app/master-data/domains'
+    | '/app/master-data'
   id:
     | '__root__'
     | '/'
@@ -191,6 +233,10 @@ export interface FileRouteTypes {
     | '/app/students'
     | '/app/upload'
     | '/app/'
+    | '/app/master-data/$module'
+    | '/app/master-data/cohorts'
+    | '/app/master-data/domains'
+    | '/app/master-data/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -299,14 +345,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/master-data/': {
+      id: '/app/master-data/'
+      path: '/'
+      fullPath: '/app/master-data/'
+      preLoaderRoute: typeof AppMasterDataIndexRouteImport
+      parentRoute: typeof AppMasterDataRoute
+    }
+    '/app/master-data/domains': {
+      id: '/app/master-data/domains'
+      path: '/domains'
+      fullPath: '/app/master-data/domains'
+      preLoaderRoute: typeof AppMasterDataDomainsRouteImport
+      parentRoute: typeof AppMasterDataRoute
+    }
+    '/app/master-data/cohorts': {
+      id: '/app/master-data/cohorts'
+      path: '/cohorts'
+      fullPath: '/app/master-data/cohorts'
+      preLoaderRoute: typeof AppMasterDataCohortsRouteImport
+      parentRoute: typeof AppMasterDataRoute
+    }
+    '/app/master-data/$module': {
+      id: '/app/master-data/$module'
+      path: '/$module'
+      fullPath: '/app/master-data/$module'
+      preLoaderRoute: typeof AppMasterDataModuleRouteImport
+      parentRoute: typeof AppMasterDataRoute
+    }
   }
 }
+
+interface AppMasterDataRouteChildren {
+  AppMasterDataModuleRoute: typeof AppMasterDataModuleRoute
+  AppMasterDataCohortsRoute: typeof AppMasterDataCohortsRoute
+  AppMasterDataDomainsRoute: typeof AppMasterDataDomainsRoute
+  AppMasterDataIndexRoute: typeof AppMasterDataIndexRoute
+}
+
+const AppMasterDataRouteChildren: AppMasterDataRouteChildren = {
+  AppMasterDataModuleRoute: AppMasterDataModuleRoute,
+  AppMasterDataCohortsRoute: AppMasterDataCohortsRoute,
+  AppMasterDataDomainsRoute: AppMasterDataDomainsRoute,
+  AppMasterDataIndexRoute: AppMasterDataIndexRoute,
+}
+
+const AppMasterDataRouteWithChildren = AppMasterDataRoute._addFileChildren(
+  AppMasterDataRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAuditRoute: typeof AppAuditRoute
   AppCertificatesRoute: typeof AppCertificatesRoute
   AppFormsRoute: typeof AppFormsRoute
-  AppMasterDataRoute: typeof AppMasterDataRoute
+  AppMasterDataRoute: typeof AppMasterDataRouteWithChildren
   AppMyCertificatesRoute: typeof AppMyCertificatesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppRolesRoute: typeof AppRolesRoute
@@ -320,7 +412,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAuditRoute: AppAuditRoute,
   AppCertificatesRoute: AppCertificatesRoute,
   AppFormsRoute: AppFormsRoute,
-  AppMasterDataRoute: AppMasterDataRoute,
+  AppMasterDataRoute: AppMasterDataRouteWithChildren,
   AppMyCertificatesRoute: AppMyCertificatesRoute,
   AppReportsRoute: AppReportsRoute,
   AppRolesRoute: AppRolesRoute,
