@@ -80,6 +80,16 @@ function UploadPage() {
     enabled: !!studentQ.data?.id
   });
 
+  const formSubmissionsQ = useQuery({
+    queryKey: ["my_form_submissions", studentQ.data?.id],
+    queryFn: async () => {
+      if (!studentQ.data?.id) return [];
+      const { data } = await supabase.from("form_responses").select("form_id").eq("student_id", studentQ.data.id);
+      return data?.map(d => d.form_id) ?? [];
+    },
+    enabled: !!studentQ.data?.id
+  });
+
   const deptsQ = useQuery({ queryKey: ["departments"], queryFn: async () => (await supabase.from("departments").select("*")).data ?? [] });
   const sectionsQ = useQuery({ queryKey: ["sections"], queryFn: async () => (await supabase.from("sections").select("*")).data ?? [] });
   const semestersQ = useQuery({ queryKey: ["semesters"], queryFn: async () => (await supabase.from("semesters").select("*")).data ?? [] });
@@ -154,6 +164,7 @@ function UploadPage() {
       }
 
       if (submissionsQ.data?.includes(values.domain_id)) throw new Error("You have already submitted a certificate for this domain.");
+      if (formSubmissionsQ.data?.includes(selectedForm.id)) throw new Error("You have already submitted a response for this form.");
 
       const path = `${me.data.user.id}/${crypto.randomUUID()}-${file.name}`;
       const up = await supabase.storage.from("certificates").upload(path, file, { contentType: file.type });

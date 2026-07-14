@@ -14,7 +14,7 @@ export function StudentDashboard() {
     enabled: !!me.data?.user.id,
     queryFn: async () => {
       const { data: student } = await supabase.from("students").select("*, departments(name), cohorts(name)").eq("profile_id", me.data!.user.id).maybeSingle();
-      const { data: certs } = await supabase.from("certificates").select("*, domains(name), companies(name)").eq("submitted_by", me.data!.user.id).order("created_at", { ascending: false });
+      const { data: certs } = await supabase.from("certificates").select("*, domains(name)").eq("submitted_by", me.data!.user.id).order("created_at", { ascending: false });
       return { student, certs: certs ?? [] };
     },
   });
@@ -62,7 +62,7 @@ export function StudentDashboard() {
                 <div key={c.id} className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-3">
                   <div>
                     <div className="text-sm font-medium">{c.domains?.name ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">{c.companies?.name ?? "—"} · {new Date(c.created_at).toLocaleDateString()}</div>
+                    <div className="text-xs text-muted-foreground">{c.domains?.name ?? "—"} · {new Date(c.created_at).toLocaleDateString()}</div>
                   </div>
                   <StatusBadge status={c.status} />
                 </div>

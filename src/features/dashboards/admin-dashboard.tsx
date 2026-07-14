@@ -15,7 +15,7 @@ function useDashboardStats() {
         supabase.from("certificates").select("id", { count: "exact", head: true }).in("status", ["pending", "needs_review"]),
         supabase.from("certificates").select("id", { count: "exact", head: true }).eq("status", "approved"),
         supabase.from("certificates").select("id", { count: "exact", head: true }).eq("status", "rejected"),
-        supabase.from("certificates").select("id, status, created_at, ai_confidence, students(full_name, roll_number), domains(name), companies(name)").order("created_at", { ascending: false }).limit(6),
+        supabase.from("certificates").select("id, status, created_at, ai_confidence, students(full_name, roll_number), domains(name)").order("created_at", { ascending: false }).limit(6),
         supabase.from("students").select("department_id, departments(name)").limit(500),
       ]);
       const deptCounts = new Map<string, number>();

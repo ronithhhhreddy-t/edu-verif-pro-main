@@ -19,7 +19,7 @@ function MyCerts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("certificates")
-        .select("*, domains(name), companies(name), certificate_types(name)")
+        .select("*, domains(name), certificate_types(name)")
         .eq("submitted_by", me.data!.user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -40,7 +40,7 @@ function MyCerts() {
             <GlassCard key={c.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-base font-semibold">{c.domains?.name ?? "—"}</div>
-                <div className="text-sm text-muted-foreground">{c.companies?.name ?? "—"} · {c.certificate_types?.name ?? "Certificate"} · {new Date(c.created_at).toLocaleDateString()}</div>
+                <div className="text-sm text-muted-foreground">{c.domains?.name ?? "—"} · {c.certificate_types?.name ?? "Certificate"} · {new Date(c.created_at).toLocaleDateString()}</div>
                 {c.reviewer_notes ? <div className="mt-2 text-xs text-muted-foreground italic">Note: {c.reviewer_notes}</div> : null}
                 {c.ai_issues?.length ? <div className="mt-2 text-xs text-amber-700 dark:text-amber-400">Issues: {c.ai_issues.join(", ")}</div> : null}
               </div>
