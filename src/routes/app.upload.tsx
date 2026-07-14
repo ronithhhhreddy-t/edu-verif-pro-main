@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useMe } from "@/lib/auth";
 import { verifyCertificate } from "@/lib/certificate-verify.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/upload")({ component: UploadPage });
@@ -24,6 +25,7 @@ function UploadPage() {
   const qc = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const verify = useServerFn(verifyCertificate);
   
   // State for dynamic form
   const [selectedFormId, setSelectedFormId] = useState<string>("");
@@ -90,10 +92,10 @@ function UploadPage() {
     enabled: !!studentQ.data?.id
   });
 
-  const deptsQ = useQuery({ queryKey: ["departments"], queryFn: async () => (await supabase.from("departments").select("*")).data ?? [] });
-  const sectionsQ = useQuery({ queryKey: ["sections"], queryFn: async () => (await supabase.from("sections").select("*")).data ?? [] });
-  const semestersQ = useQuery({ queryKey: ["semesters"], queryFn: async () => (await supabase.from("semesters").select("*")).data ?? [] });
-  const yearsQ = useQuery({ queryKey: ["academic_years"], queryFn: async () => (await supabase.from("academic_years").select("*")).data ?? [] });
+  const deptsQ = useQuery({ queryKey: ["departments"], queryFn: async () => (await supabase.from("departments" as any).select("*")).data ?? [] });
+  const sectionsQ = useQuery({ queryKey: ["sections"], queryFn: async () => (await supabase.from("sections" as any).select("*")).data ?? [] });
+  const semestersQ = useQuery({ queryKey: ["semesters"], queryFn: async () => (await supabase.from("semesters" as any).select("*")).data ?? [] });
+  const yearsQ = useQuery({ queryKey: ["academic_years"], queryFn: async () => (await supabase.from("academic_years" as any).select("*")).data ?? [] });
 
   const { register, handleSubmit, setValue, formState, watch } = useForm();
 
@@ -102,10 +104,10 @@ function UploadPage() {
       setStudentDetails({
         full_name: studentQ.data.full_name || "",
         roll_number: studentQ.data.roll_number?.startsWith("TBD-") ? "" : (studentQ.data.roll_number || ""),
-        department_id: studentQ.data.department_id || "",
-        section_id: studentQ.data.section_id || "",
-        semester_id: studentQ.data.semester_id || "",
-        academic_year_id: studentQ.data.academic_year_id || ""
+        department_id: (studentQ.data as any).department_id || "",
+        section_id: (studentQ.data as any).section_id || "",
+        semester_id: (studentQ.data as any).semester_id || "",
+        academic_year_id: (studentQ.data as any).academic_year_id || ""
       });
     } else if (me.data?.user) {
       setStudentDetails(prev => ({
@@ -193,7 +195,7 @@ function UploadPage() {
 
       // Kick off AI verification if enabled for this form
       if (uploadConfig.enableAI !== false) {
-        try { await verifyCertificate({ data: { certificate_id: ins.data.id, signed_url: signed?.signedUrl } }); } 
+        try { await verify({ data: { certificate_id: ins.data.id, signed_url: signed?.signedUrl } }); } 
         catch (e) { console.warn("AI verify skipped", e); }
       }
       return ins.data.id;
@@ -306,7 +308,7 @@ function UploadPage() {
                 </div>
 
                 {/* Dynamic Fields */}
-                {selectedForm.schema?.length > 0 && (
+                {Array.isArray(selectedForm.schema) && selectedForm.schema.length > 0 && (
                   <div className="space-y-4 border-t border-border/50 pt-4">
                     <Label className="text-sm font-semibold">Additional Information</Label>
                     {selectedForm.schema.map((fd: any) => (
