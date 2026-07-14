@@ -91,7 +91,21 @@ function UploadPage() {
       if (uploadConfig.requireDeclaration && !declarationChecked) throw new Error("You must agree to the declaration");
 
       if (!me.data?.user.id) throw new Error("Not signed in");
-      if (!studentQ.data?.id) throw new Error("Your student record isn't linked. Ask admin to import you.");
+      
+      let studentId = studentQ.data?.id;
+      if (!studentId) {
+        // Auto-create student record if it doesn't exist
+        const insStudent = await supabase.from("students").insert({
+          profile_id: me.data.user.id,
+          email: me.data.user.email || "",
+          full_name: me.data.user.user_metadata?.full_name || me.data.user.email?.split("@")[0] || "Unknown",
+          roll_number: `TBD-${me.data.user.id.substring(0, 6)}`,
+          status: "active"
+        }).select("id").single();
+        if (insStudent.error) throw insStudent.error;
+        studentId = insStudent.data.id;
+      }
+
       if (submissionsQ.data?.includes(values.domain_id)) throw new Error("You have already submitted a certificate for this domain.");
 
       const path = `${me.data.user.id}/${crypto.randomUUID()}-${file.name}`;
@@ -101,14 +115,14 @@ function UploadPage() {
 
       const formResponse = await supabase.from("form_responses").insert({
         form_id: selectedForm.id,
-        student_id: studentQ.data.id,
+        student_id: studentId,
         submitted_by: me.data.user.id,
         data: dynamicValues
       });
       if (formResponse.error) throw formResponse.error;
 
       const ins = await supabase.from("certificates").insert({
-        student_id: studentQ.data.id,
+        student_id: studentId,
         submitted_by: me.data.user.id,
         domain_id: values.domain_id,
         cohort_id: cohortId,
