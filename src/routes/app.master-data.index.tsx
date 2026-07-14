@@ -10,7 +10,7 @@ const MODULES = [
   { title: "Cohorts", icon: Users, to: "/app/master-data/cohorts", desc: "Manage student cohorts and batches" },
   { title: "Domains", icon: Database, to: "/app/master-data/domains", desc: "Manage domains and courses" },
   { title: "Departments", icon: Layers, to: "/app/master-data/departments", desc: "Manage academic departments" },
-  { title: "Class (Programs)", icon: Database, to: "/app/master-data/programs", desc: "Manage academic programs and classes" },
+  { title: "Class", icon: Database, to: "/app/master-data/programs", desc: "Manage academic programs and classes" },
   { title: "Sections", icon: Users, to: "/app/master-data/sections", desc: "Manage class sections" },
   { title: "Academic Years", icon: Database, to: "/app/master-data/academic-years", desc: "Manage academic years" },
 ];

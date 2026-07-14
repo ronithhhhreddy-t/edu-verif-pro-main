@@ -249,7 +249,7 @@ function UploadPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs">Class (Program)</Label>
+                      <Label className="text-xs">Class</Label>
                       <Select value={studentDetails.program_id} onValueChange={v => setStudentDetails({...studentDetails, program_id: v})}>
                         <SelectTrigger className="mt-1"><SelectValue placeholder="Select Class" /></SelectTrigger>
                         <SelectContent>
