@@ -91,7 +91,7 @@ function UploadPage() {
     if (studentQ.data) {
       setStudentDetails({
         full_name: studentQ.data.full_name || "",
-        roll_number: studentQ.data.roll_number || "",
+        roll_number: studentQ.data.roll_number?.startsWith("TBD-") ? "" : (studentQ.data.roll_number || ""),
         department_id: studentQ.data.department_id || "",
         section_id: studentQ.data.section_id || "",
         semester_id: studentQ.data.semester_id || "",
