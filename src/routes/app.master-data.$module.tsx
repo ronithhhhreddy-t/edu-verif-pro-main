@@ -76,32 +76,29 @@ function GenericMasterEditor() {
           </Button>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-white/30 backdrop-blur-md">
-          <table className="w-full text-sm">
-            <thead className="bg-background/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                {spec.fields.map((fd) => <th key={fd.key} className="p-4 font-semibold">{fd.label}</th>)}
-                <th className="p-4 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {(q.data ?? []).map((row: any) => (
-                <tr key={row.id} className="transition-colors hover:bg-muted/30">
-                  {spec.fields.map((fd) => <td key={fd.key} className="p-4">{row[fd.key] ?? "—"}</td>)}
-                  <td className="p-4 text-right">
-                    <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => del.mutate(row.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
+        <div className="grid gap-3 sm:gap-0 sm:glass sm:rounded-2xl sm:overflow-hidden sm:border sm:border-border/50">
+          <div className="hidden sm:flex items-center p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-background/40">
+            {spec.fields.map((fd) => <div key={fd.key} className="flex-1">{fd.label}</div>)}
+            <div className="w-24 text-right">Actions</div>
+          </div>
+          {(q.data ?? []).map((row: any) => (
+            <div key={row.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 border-b border-border/50 hover:bg-accent/30 glass sm:bg-transparent rounded-2xl sm:rounded-none transition-colors">
+              {spec.fields.map((fd) => (
+                <div key={fd.key} className="flex-1 flex flex-col min-w-0">
+                  <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">{fd.label}</div>
+                  <div className="font-medium truncate">{row[fd.key] ?? "—"}</div>
+                </div>
               ))}
-              {q.data?.length === 0 && (
-                <tr>
-                  <td colSpan={spec.fields.length + 1} className="p-8 text-center text-muted-foreground">No records found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              <div className="w-full sm:w-24 mt-2 sm:mt-0 flex sm:justify-end">
+                <Button size="icon" variant="ghost" className="w-full sm:w-auto rounded-xl border border-destructive/20 text-destructive bg-destructive/5 hover:bg-destructive/10 sm:border-transparent sm:bg-transparent" onClick={() => del.mutate(row.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {q.data?.length === 0 && (
+            <div className="p-8 text-center text-muted-foreground glass sm:bg-transparent rounded-2xl sm:rounded-none">No records found.</div>
+          )}
         </div>
       </GlassCard>
     </div>

@@ -25,20 +25,28 @@ export const verifyCertificate = createServerFn({ method: "POST" })
       signedUrl = s?.signedUrl;
     }
 
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || !signedUrl) {
-      await supabase.from("certificates").update({ status: "needs_review", ai_summary: { note: "AI not configured" } }).eq("id", data.certificate_id);
+      await supabase.from("certificates").update({ status: "needs_review", ai_summary: { note: "AI not configured (GEMINI_API_KEY missing)" } }).eq("id", data.certificate_id);
       return { status: "needs_review" as const };
     }
 
     const student = (cert as any).students;
     const domainName = (cert as any).domains?.name;
 
-    const systemPrompt = `You are an expert academic-credential auditor. You analyze uploaded internship / course completion certificates and return a strict JSON verdict.
-Detect: fake certificates, edited images/PDFs, mismatched names/roll numbers, wrong domain/company, missing signatures, tampering.
+    const systemPrompt = `You are an enterprise-grade AI Certificate Verification Engine. 
+You must analyze uploaded internship/course completion certificates and run a strict verification pipeline.
+
+Pipeline Steps:
+1. OCR Extraction: Extract all visible text (Student Name, Registration/Roll Number, Company Name, Domain, Dates, QR Code text, Signatures).
+2. Student Record Validation: Compare extracted data exactly with the expected student profile and domain. Any mismatch is a red flag.
+3. Template & Logo Matching: Identify the corporate logo (e.g. AWS, Google, Cisco) and verify if the layout matches typical templates for that issuer.
+4. Tampering & Image Forensics: Inspect for signs of digital tampering, copy-pasting, font anomalies, or manipulated text overlays.
+5. Decision Engine: Combine findings into a final authenticity score and recommendation.
+
 Return ONLY valid JSON matching this schema:
 {
-  "extracted": { "student_name": string|null, "roll_number": string|null, "domain": string|null, "certificate_id": string|null, "issue_date": string|null, "completion_date": string|null, "has_qr": boolean, "has_logo": boolean, "has_signature": boolean },
+  "extracted": { "student_name": string|null, "roll_number": string|null, "company_name": string|null, "domain": string|null, "certificate_id": string|null, "issue_date": string|null, "completion_date": string|null, "has_qr": boolean, "has_logo": boolean, "has_signature": boolean },
   "confidence": number (0..1),
   "authenticity": number (0..1),
   "issues": string[],
@@ -52,27 +60,29 @@ Expected domain: ${domainName ?? "unknown"}
 Compare extracted OCR fields against the expected values and flag any mismatch.`;
 
     const isPdf = cert.file_mime === "application/pdf";
-    const parts: any[] = [{ type: "text", text: userText }];
-    if (isPdf) {
-      // For PDFs, use file part with signed URL fetched as base64
-      const res = await fetch(signedUrl);
-      const buf = await res.arrayBuffer();
-      const b64 = Buffer.from(buf).toString("base64");
-      parts.push({ type: "file", file: { filename: "certificate.pdf", file_data: `data:application/pdf;base64,${b64}` } });
-    } else {
-      parts.push({ type: "image_url", image_url: { url: signedUrl } });
-    }
+    const res = await fetch(signedUrl);
+    const buf = await res.arrayBuffer();
+    const b64 = Buffer.from(buf).toString("base64");
+    const mimeType = isPdf ? "application/pdf" : (cert.file_mime || "image/jpeg");
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: parts },
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [
+          {
+            parts: [
+              { text: userText },
+              { inlineData: { mimeType, data: b64 } }
+            ]
+          }
         ],
-        response_format: { type: "json_object" },
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
       }),
     });
 
@@ -86,13 +96,14 @@ Compare extracted OCR fields against the expected values and flag any mismatch.`
     const aiJson = await aiRes.json();
     let parsed: any = {};
     try {
-      parsed = JSON.parse(aiJson.choices?.[0]?.message?.content ?? "{}");
+      const text = aiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+      parsed = JSON.parse(text);
     } catch {
       parsed = { recommendation: "needs_review", issues: ["Could not parse AI response"], confidence: 0.3, authenticity: 0.3 };
     }
 
-    const status = parsed.recommendation === "verified" ? "ai_verified"
-      : parsed.recommendation === "rejected" ? "needs_review" // still requires admin final say
+    const status = parsed.recommendation === "verified" ? "approved"
+      : parsed.recommendation === "rejected" ? "rejected"
       : "needs_review";
 
     await supabase.from("certificates").update({
@@ -111,6 +122,11 @@ Compare extracted OCR fields against the expected values and flag any mismatch.`
       notes: parsed.notes ?? null,
       payload: parsed,
     });
+    
+    // Auto-cleanup: If verified (approved), delete the file to save storage space
+    if (status === "approved" && cert.file_url) {
+      await supabase.storage.from("certificates").remove([cert.file_url]);
+    }
 
     return { status, parsed };
   });
@@ -144,6 +160,14 @@ export const reviewCertificate = createServerFn({ method: "POST" })
       to_status: data.decision,
       notes: data.notes ?? null,
     });
+    // Auto-cleanup: If admin manually approves, delete the file to save storage space
+    if (data.decision === "approved" && prev) {
+       const { data: certDetails } = await supabase.from("certificates").select("file_url").eq("id", data.certificate_id).single();
+       if (certDetails?.file_url) {
+         await supabase.storage.from("certificates").remove([certDetails.file_url]);
+       }
+    }
+
     // Notify student
     const { data: student } = await supabase.from("students").select("profile_id").eq("id", upd.data.student_id).maybeSingle();
     if (student?.profile_id) {

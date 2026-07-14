@@ -70,33 +70,55 @@ function StudentsPage() {
         </div>
       </GlassCard>
 
-      <GlassCard className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-background/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="p-4">Name</th><th className="p-4">Roll</th><th className="p-4">Email</th><th className="p-4">Department</th><th className="p-4">Cohort</th><th className="p-4 text-right">Actions</th></tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {(q.data ?? []).map((s: any) => (
-                <tr key={s.id} className="transition-colors hover:bg-muted/30">
-                  <td className="p-4 font-medium">{s.full_name}</td>
-                  <td className="p-4">{s.roll_number}</td>
-                  <td className="p-4 text-muted-foreground">{s.email}</td>
-                  <td className="p-4">{s.departments?.name ?? "—"}</td>
-                  <td className="p-4">{s.cohorts?.name ?? "—"}</td>
-                  <td className="p-4 text-right">
-                    <Button size="sm" variant="ghost" onClick={() => setViewingProfile(s)}>Profile <ArrowRight className="ml-1 h-4 w-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(s)}><Edit3 className="h-4 w-4" /></Button>
-                    <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => del.mutate(s.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </td>
-                </tr>
-              ))}
-              {q.isLoading ? <tr><td colSpan={6} className="p-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr> :
-                (q.data ?? []).length === 0 ? <tr><td colSpan={6} className="p-10 text-center text-sm text-muted-foreground">No students yet. Import or add one.</td></tr> : null}
-            </tbody>
-          </table>
+      <div className="grid gap-3 sm:gap-0 sm:glass sm:rounded-2xl sm:overflow-hidden">
+        <div className="hidden sm:grid sm:grid-cols-6 gap-4 p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-background/40">
+          <div className="col-span-2">Name</div>
+          <div>Roll & Email</div>
+          <div>Department</div>
+          <div>Cohort</div>
+          <div className="text-right">Actions</div>
         </div>
-      </GlassCard>
+        {(q.data ?? []).map((s: any) => (
+          <div key={s.id} className="grid grid-cols-1 sm:grid-cols-6 items-center gap-3 sm:gap-4 p-4 border-b border-border/50 hover:bg-accent/30 glass sm:bg-transparent rounded-2xl sm:rounded-none transition-colors">
+            <div className="col-span-1 sm:col-span-2 flex flex-col min-w-0">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">Student Name</div>
+              <div className="font-medium truncate">{s.full_name}</div>
+            </div>
+            
+            <div className="col-span-1 flex flex-col min-w-0">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">Roll & Email</div>
+              <div className="font-medium truncate">{s.roll_number}</div>
+              <div className="text-xs text-muted-foreground truncate">{s.email}</div>
+            </div>
+
+            <div className="col-span-1 flex flex-col sm:block">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">Department</div>
+              <div className="truncate">{s.departments?.name ?? "—"}</div>
+            </div>
+
+            <div className="col-span-1 flex flex-col sm:block">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">Cohort</div>
+              <div className="truncate">{s.cohorts?.name ?? "—"}</div>
+            </div>
+
+            <div className="col-span-1 mt-2 sm:mt-0 flex flex-wrap gap-2 sm:justify-end">
+              <Button size="sm" variant="outline" className="flex-1 sm:flex-none rounded-xl" onClick={() => setViewingProfile(s)}>
+                <span className="sm:hidden font-medium">Profile</span>
+                <ArrowRight className="sm:hidden ml-1 h-4 w-4" />
+                <span className="hidden sm:inline-flex items-center">Profile <ArrowRight className="ml-1 h-4 w-4" /></span>
+              </Button>
+              <Button size="icon" variant="ghost" className="rounded-xl border border-border/50 sm:border-transparent bg-background/50 sm:bg-transparent" onClick={() => setEditing(s)}><Edit3 className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" className="rounded-xl border border-destructive/20 text-destructive bg-destructive/5 hover:bg-destructive/10 sm:border-transparent sm:bg-transparent" onClick={() => del.mutate(s.id)}><Trash2 className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        ))}
+        {q.isLoading && <div className="p-10 text-center glass rounded-2xl sm:rounded-none sm:bg-transparent"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></div>}
+        {!q.isLoading && (q.data ?? []).length === 0 && (
+          <div className="p-10 text-center text-sm text-muted-foreground glass rounded-2xl sm:rounded-none sm:bg-transparent">
+            No students yet. Import or add one.
+          </div>
+        )}
+      </div>
 
       {viewingProfile && <StudentProfileModal student={viewingProfile} onClose={() => setViewingProfile(null)} />}
       {editing && <StudentDialog student={editing} onClose={() => setEditing(null)} dropdowns={dropdowns.data} onSaved={() => qc.invalidateQueries({ queryKey: ["students"] })} />}

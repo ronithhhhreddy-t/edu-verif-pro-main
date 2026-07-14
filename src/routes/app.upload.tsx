@@ -221,7 +221,7 @@ function UploadPage() {
                 {/* Student Details Form */}
                 <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 space-y-4">
                   <Label className="text-primary font-semibold border-b border-primary/10 pb-2 flex">Student Details</Label>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <Label className="text-xs">Name *</Label>
                       <Input value={studentDetails.full_name} onChange={e => setStudentDetails({...studentDetails, full_name: e.target.value})} required />
@@ -268,7 +268,7 @@ function UploadPage() {
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground text-xs uppercase">Assigned Cohort</Label>
                     <div className="mt-1 font-medium bg-muted/30 px-3 py-2 rounded-md border border-border cursor-not-allowed">

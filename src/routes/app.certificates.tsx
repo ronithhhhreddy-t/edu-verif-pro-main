@@ -91,38 +91,52 @@ function CertsReview() {
         </div>
       </GlassCard>
 
-      <GlassCard className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-background/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="p-3">Student</th><th className="p-3">Domain</th>
-                <th className="p-3">AI</th><th className="p-3">Status</th><th className="p-3">Date</th><th className="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(q.data ?? []).map((r: any) => (
-                <tr key={r.id} className="border-t border-border/50 hover:bg-accent/30">
-                  <td className="p-3">
-                    <div className="font-medium">{r.students?.full_name ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">{r.students?.roll_number} · {r.students?.departments?.name ?? ""}</div>
-                  </td>
-                  <td className="p-3">{r.domains?.name ?? "—"}</td>
-                  <td className="p-3">{r.ai_confidence != null ? `${Math.round(r.ai_confidence * 100)}%` : "—"}</td>
-                  <td className="p-3"><StatusBadge status={r.status} /></td>
-                  <td className="p-3 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
-                  <td className="p-3 text-right">
-                    <Button size="sm" variant="ghost" onClick={() => openDetails(r)}><Eye className="h-4 w-4" /></Button>
-                  </td>
-                </tr>
-              ))}
-              {(q.data ?? []).length === 0 && (
-                <tr><td colSpan={7} className="p-10 text-center text-sm text-muted-foreground">No certificates match.</td></tr>
-              )}
-            </tbody>
-          </table>
+      <div className="grid gap-3 sm:gap-0 sm:glass sm:rounded-2xl sm:overflow-hidden">
+        <div className="hidden sm:grid sm:grid-cols-7 gap-4 p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-background/40">
+          <div className="col-span-2">Student</div>
+          <div className="col-span-2">Domain</div>
+          <div>AI Score</div>
+          <div>Status</div>
+          <div className="text-right">Action</div>
         </div>
-      </GlassCard>
+        {(q.data ?? []).map((r: any) => (
+          <div key={r.id} className="grid grid-cols-1 sm:grid-cols-7 items-center gap-3 sm:gap-4 p-4 border-b border-border/50 hover:bg-accent/30 glass sm:bg-transparent rounded-2xl sm:rounded-none transition-colors">
+            <div className="col-span-1 sm:col-span-2 flex flex-col min-w-0">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">Student</div>
+              <div className="font-medium truncate">{r.students?.full_name ?? "—"}</div>
+              <div className="text-xs text-muted-foreground truncate">{r.students?.roll_number} - {r.students?.departments?.name ?? ""}</div>
+            </div>
+            
+            <div className="col-span-1 sm:col-span-2 flex flex-col min-w-0">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">Domain & Date</div>
+              <div className="font-medium truncate">{r.domains?.name ?? "—"}</div>
+              <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</div>
+            </div>
+
+            <div className="col-span-1 flex flex-col sm:block">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">AI Confidence</div>
+              <div className="text-sm">{r.ai_confidence != null ? `${Math.round(r.ai_confidence * 100)}%` : "—"}</div>
+            </div>
+
+            <div className="col-span-1 flex flex-col sm:block">
+              <div className="text-[10px] font-bold uppercase text-muted-foreground sm:hidden mb-1">Status</div>
+              <div><StatusBadge status={r.status} /></div>
+            </div>
+
+            <div className="col-span-1 mt-2 sm:mt-0 flex sm:justify-end">
+              <Button size="sm" variant="outline" className="w-full sm:w-auto rounded-xl" onClick={() => openDetails(r)}>
+                <Eye className="mr-2 sm:mr-0 h-4 w-4" />
+                <span className="sm:hidden font-medium">Review Certificate</span>
+              </Button>
+            </div>
+          </div>
+        ))}
+        {(q.data ?? []).length === 0 && (
+          <div className="p-10 text-center text-sm text-muted-foreground glass rounded-2xl sm:rounded-none sm:bg-transparent">
+            No certificates match your search.
+          </div>
+        )}
+      </div>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-5xl">

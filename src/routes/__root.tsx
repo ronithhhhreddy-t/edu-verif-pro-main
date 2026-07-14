@@ -78,8 +78,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=0" },
       { title: "EduSkills Verification Platform" },
+      { name: "theme-color", content: "#0ea5e9" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "description", content: "AI-powered internship certificate verification, student records, and cohort management for higher education." },
       { name: "author", content: "EduSkills Verification" },
       { property: "og:title", content: "EduSkills Verification Platform" },
@@ -92,6 +95,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/logo.png" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
