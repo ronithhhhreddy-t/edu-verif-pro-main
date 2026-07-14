@@ -29,6 +29,15 @@ function UploadPage() {
   const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [dynamicValues, setDynamicValues] = useState<Record<string, any>>({});
   const [declarationChecked, setDeclarationChecked] = useState(false);
+  
+  const [studentDetails, setStudentDetails] = useState({
+    full_name: "",
+    roll_number: "",
+    department_id: "",
+    section_id: "",
+    program_id: "",
+    academic_year_id: ""
+  });
 
   // Queries
   const activeFormsQ = useQuery({ 
@@ -71,7 +80,30 @@ function UploadPage() {
     enabled: !!studentQ.data?.id
   });
 
+  const deptsQ = useQuery({ queryKey: ["departments"], queryFn: async () => (await supabase.from("departments").select("*")).data ?? [] });
+  const sectionsQ = useQuery({ queryKey: ["sections"], queryFn: async () => (await supabase.from("sections").select("*")).data ?? [] });
+  const programsQ = useQuery({ queryKey: ["programs"], queryFn: async () => (await supabase.from("programs").select("*")).data ?? [] });
+  const yearsQ = useQuery({ queryKey: ["academic_years"], queryFn: async () => (await supabase.from("academic_years").select("*")).data ?? [] });
+
   const { register, handleSubmit, setValue, formState, watch } = useForm();
+
+  useEffect(() => {
+    if (studentQ.data) {
+      setStudentDetails({
+        full_name: studentQ.data.full_name || "",
+        roll_number: studentQ.data.roll_number || "",
+        department_id: studentQ.data.department_id || "",
+        section_id: studentQ.data.section_id || "",
+        program_id: studentQ.data.program_id || "",
+        academic_year_id: studentQ.data.academic_year_id || ""
+      });
+    } else if (me.data?.user) {
+      setStudentDetails(prev => ({
+        ...prev,
+        full_name: me.data.user.user_metadata?.full_name || me.data.user.email?.split("@")[0] || ""
+      }));
+    }
+  }, [studentQ.data, me.data]);
 
   useEffect(() => {
     if (!file) return setPreview(null);
@@ -93,17 +125,32 @@ function UploadPage() {
       if (!me.data?.user.id) throw new Error("Not signed in");
       
       let studentId = studentQ.data?.id;
+
+      if (!studentDetails.full_name || !studentDetails.roll_number) {
+        throw new Error("Please fill in your Name and Registration Number in the Student Details section.");
+      }
+
+      const studentData = {
+        profile_id: me.data.user.id,
+        email: me.data.user.email || "",
+        full_name: studentDetails.full_name,
+        roll_number: studentDetails.roll_number,
+        department_id: studentDetails.department_id || null,
+        section_id: studentDetails.section_id || null,
+        program_id: studentDetails.program_id || null,
+        academic_year_id: studentDetails.academic_year_id || null,
+        status: "active"
+      };
+
       if (!studentId) {
         // Auto-create student record if it doesn't exist
-        const insStudent = await supabase.from("students").insert({
-          profile_id: me.data.user.id,
-          email: me.data.user.email || "",
-          full_name: me.data.user.user_metadata?.full_name || me.data.user.email?.split("@")[0] || "Unknown",
-          roll_number: `TBD-${me.data.user.id.substring(0, 6)}`,
-          status: "active"
-        }).select("id").single();
+        const insStudent = await supabase.from("students").insert(studentData).select("id").single();
         if (insStudent.error) throw insStudent.error;
         studentId = insStudent.data.id;
+      } else {
+        // Update existing student record with new details
+        const upStudent = await supabase.from("students").update(studentData).eq("id", studentId);
+        if (upStudent.error) throw upStudent.error;
       }
 
       if (submissionsQ.data?.includes(values.domain_id)) throw new Error("You have already submitted a certificate for this domain.");
@@ -171,30 +218,56 @@ function UploadPage() {
             {selectedForm && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                 
-                {/* Auto-filled Student Details */}
-                {studentQ.data && (
-                  <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 space-y-4">
-                    <Label className="text-primary font-semibold border-b border-primary/10 pb-2 flex">Student Details</Label>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="text-muted-foreground text-xs">Name</div>
-                        <div className="font-medium">{studentQ.data.full_name}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground text-xs">Registration Number</div>
-                        <div className="font-medium">{studentQ.data.roll_number}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground text-xs">College Email</div>
-                        <div className="font-medium">{studentQ.data.email}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground text-xs">Department</div>
-                        <div className="font-medium">{studentQ.data.departments?.name || '-'}</div>
-                      </div>
+                {/* Student Details Form */}
+                <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 space-y-4">
+                  <Label className="text-primary font-semibold border-b border-primary/10 pb-2 flex">Student Details</Label>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <Label className="text-xs">Name *</Label>
+                      <Input value={studentDetails.full_name} onChange={e => setStudentDetails({...studentDetails, full_name: e.target.value})} required />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Registration Number *</Label>
+                      <Input value={studentDetails.roll_number} onChange={e => setStudentDetails({...studentDetails, roll_number: e.target.value})} required />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Department</Label>
+                      <Select value={studentDetails.department_id} onValueChange={v => setStudentDetails({...studentDetails, department_id: v})}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select Department" /></SelectTrigger>
+                        <SelectContent>
+                          {deptsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Section</Label>
+                      <Select value={studentDetails.section_id} onValueChange={v => setStudentDetails({...studentDetails, section_id: v})}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select Section" /></SelectTrigger>
+                        <SelectContent>
+                          {sectionsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Class (Program)</Label>
+                      <Select value={studentDetails.program_id} onValueChange={v => setStudentDetails({...studentDetails, program_id: v})}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select Class" /></SelectTrigger>
+                        <SelectContent>
+                          {programsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Year</Label>
+                      <Select value={studentDetails.academic_year_id} onValueChange={v => setStudentDetails({...studentDetails, academic_year_id: v})}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select Year" /></SelectTrigger>
+                        <SelectContent>
+                          {yearsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground text-xs uppercase">Assigned Cohort</Label>
