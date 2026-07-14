@@ -55,13 +55,17 @@ function AuthPage() {
         toast.success("Welcome back");
         navigate({ to: "/app" });
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: `${window.location.origin}/app`, data: { full_name: fullName, role } },
         });
         if (error) throw error;
-        toast.success("Account created — signing you in…");
-        navigate({ to: "/app" });
+        if (!data.session) {
+          toast.success("Account created! Please check your email to verify your account.");
+        } else {
+          toast.success("Account created — signing you in…");
+          navigate({ to: "/app" });
+        }
       }
     } catch (err: any) {
       toast.error(err?.message ?? "Authentication failed");
