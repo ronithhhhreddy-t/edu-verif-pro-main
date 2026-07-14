@@ -17,11 +17,12 @@ function MyCerts() {
     queryKey: ["my-certs", me.data?.user.id],
     enabled: !!me.data?.user.id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("certificates")
         .select("*, domains(name), companies(name), certificate_types(name)")
         .eq("submitted_by", me.data!.user.id)
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -29,7 +30,11 @@ function MyCerts() {
     <div>
       <PageHeader title="My certificates" description="Every submission with its AI + admin verdict."
         actions={<Button asChild className="rounded-xl gradient-primary text-white"><Link to="/app/upload"><Upload className="mr-2 h-4 w-4" /> New upload</Link></Button>} />
-      {q.isLoading ? <div className="grid h-40 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : (
+      {q.isLoading ? <div className="grid h-40 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : q.isError ? (
+        <div className="p-8 text-center text-red-500 bg-red-50 dark:bg-red-950/20 rounded-xl">
+          Error loading certificates: {(q.error as Error).message}
+        </div>
+      ) : (
         <div className="grid gap-3">
           {(q.data ?? []).map((c: any) => (
             <GlassCard key={c.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

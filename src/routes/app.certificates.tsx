@@ -139,7 +139,7 @@ function CertsReview() {
               <div className="space-y-4">
                 <div className="rounded-xl border border-border p-3 text-sm">
                   <div className="font-semibold">{selected.students?.full_name}</div>
-                  <div className="text-muted-foreground">{selected.students?.roll_number} · {selected.students?.email}</div>
+                  <div className="text-muted-foreground">{selected.students?.roll_number} - {selected.students?.email}</div>
                 </div>
                 <div className="rounded-xl border border-border p-3 text-sm">
                   <div className="mb-1 flex items-center justify-between"><span className="font-semibold">AI verdict</span><StatusBadge status={selected.status} /></div>
