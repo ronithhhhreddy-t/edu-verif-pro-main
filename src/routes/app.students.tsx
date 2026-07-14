@@ -41,8 +41,24 @@ function StudentsPage() {
   });
 
   const del = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("students").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["students"] }); },
+    mutationFn: async (id: string) => { 
+      // 1. Fetch all certificates to delete their files from storage
+      const { data: certs } = await supabase.from("certificates").select("file_url").eq("student_id", id);
+      if (certs && certs.length > 0) {
+        const files = certs.map(c => c.file_url).filter(Boolean);
+        if (files.length > 0) {
+          await supabase.storage.from("certificates").remove(files);
+        }
+      }
+
+      // 2. Delete form responses manually (since foreign key is SET NULL, not CASCADE)
+      await supabase.from("form_responses").delete().eq("student_id", id);
+
+      // 3. Delete the student (this automatically cascades to certificates, ai_verifications, etc.)
+      const { error } = await supabase.from("students").delete().eq("id", id); 
+      if (error) throw error; 
+    },
+    onSuccess: () => { toast.success("Removed completely"); qc.invalidateQueries({ queryKey: ["students"] }); },
   });
 
   return (
