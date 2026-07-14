@@ -35,7 +35,7 @@ function UploadPage() {
     roll_number: "",
     department_id: "",
     section_id: "",
-    program_id: "",
+    semester_id: "",
     academic_year_id: ""
   });
 
@@ -82,7 +82,7 @@ function UploadPage() {
 
   const deptsQ = useQuery({ queryKey: ["departments"], queryFn: async () => (await supabase.from("departments").select("*")).data ?? [] });
   const sectionsQ = useQuery({ queryKey: ["sections"], queryFn: async () => (await supabase.from("sections").select("*")).data ?? [] });
-  const programsQ = useQuery({ queryKey: ["programs"], queryFn: async () => (await supabase.from("programs").select("*")).data ?? [] });
+  const semestersQ = useQuery({ queryKey: ["semesters"], queryFn: async () => (await supabase.from("semesters").select("*")).data ?? [] });
   const yearsQ = useQuery({ queryKey: ["academic_years"], queryFn: async () => (await supabase.from("academic_years").select("*")).data ?? [] });
 
   const { register, handleSubmit, setValue, formState, watch } = useForm();
@@ -94,7 +94,7 @@ function UploadPage() {
         roll_number: studentQ.data.roll_number || "",
         department_id: studentQ.data.department_id || "",
         section_id: studentQ.data.section_id || "",
-        program_id: studentQ.data.program_id || "",
+        semester_id: studentQ.data.semester_id || "",
         academic_year_id: studentQ.data.academic_year_id || ""
       });
     } else if (me.data?.user) {
@@ -137,7 +137,7 @@ function UploadPage() {
         roll_number: studentDetails.roll_number,
         department_id: studentDetails.department_id || null,
         section_id: studentDetails.section_id || null,
-        program_id: studentDetails.program_id || null,
+        semester_id: studentDetails.semester_id || null,
         academic_year_id: studentDetails.academic_year_id || null,
         status: "active"
       };
@@ -249,11 +249,11 @@ function UploadPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs">Class</Label>
-                      <Select value={studentDetails.program_id} onValueChange={v => setStudentDetails({...studentDetails, program_id: v})}>
-                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select Class" /></SelectTrigger>
+                      <Label className="text-xs">Semester</Label>
+                      <Select value={studentDetails.semester_id} onValueChange={v => setStudentDetails({...studentDetails, semester_id: v})}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select Semester" /></SelectTrigger>
                         <SelectContent>
-                          {programsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                          {semestersQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.label || d.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>

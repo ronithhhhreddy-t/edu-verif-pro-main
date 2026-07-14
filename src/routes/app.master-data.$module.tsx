@@ -16,9 +16,9 @@ export const Route = createFileRoute("/app/master-data/$module")({
 const SCHEMAS: Record<string, { table: string; label: string; fields: Array<{ key: string; label: string }> }> = {
   "departments": { table: "departments", label: "Departments", fields: [{ key: "code", label: "Code" }, { key: "name", label: "Name" }] },
   "programs": { table: "programs", label: "Programs", fields: [{ key: "code", label: "Code" }, { key: "name", label: "Name" }] },
-  "academic-years": { table: "academic_years", label: "Academic Years", fields: [{ key: "label", label: "Label" }] },
-  "semesters": { table: "semesters", label: "Semesters", fields: [{ key: "label", label: "Label" }] },
-  "sections": { table: "sections", label: "Sections", fields: [{ key: "name", label: "Name" }, { key: "department_id", label: "Department ID" }] },
+  "academic-years": { table: "academic_years", label: "Academic Years", fields: [{ key: "label", label: "Name" }] },
+  "semesters": { table: "semesters", label: "Semesters", fields: [{ key: "label", label: "Name" }] },
+  "sections": { table: "sections", label: "Sections", fields: [{ key: "name", label: "Name" }] },
   "companies": { table: "companies", label: "Companies", fields: [{ key: "name", label: "Name" }, { key: "website", label: "Website" }] },
   "certificate-types": { table: "certificate_types", label: "Certificate Types", fields: [{ key: "name", label: "Name" }] },
   "file-types": { table: "file_types", label: "File Types", fields: [{ key: "ext", label: "Extension" }, { key: "mime_type", label: "MIME Type" }, { key: "name", label: "Name" }] },
