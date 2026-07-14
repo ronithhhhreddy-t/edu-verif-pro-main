@@ -7,18 +7,12 @@ export const Route = createFileRoute("/app/master-data/")({
 });
 
 const MODULES = [
-  { title: "Departments", icon: Layers, to: "/app/master-data/departments", desc: "Manage academic departments" },
-  { title: "Programs / Branches", icon: Database, to: "/app/master-data/programs", desc: "Manage academic programs" },
-  { title: "Academic Years", icon: Database, to: "/app/master-data/academic-years", desc: "Manage academic years" },
-  { title: "Semesters", icon: Database, to: "/app/master-data/semesters", desc: "Manage semesters" },
   { title: "Cohorts", icon: Users, to: "/app/master-data/cohorts", desc: "Manage student cohorts and batches" },
   { title: "Domains", icon: Database, to: "/app/master-data/domains", desc: "Manage domains and courses" },
-  { title: "Certificate Types", icon: FileText, to: "/app/master-data/certificate-types", desc: "Manage certificate formats" },
-  { title: "File Types", icon: UploadCloud, to: "/app/master-data/file-types", desc: "Manage allowed file uploads" },
-  { title: "Student Status", icon: Users, to: "/app/master-data/student-statuses", desc: "Manage student lifecycle states" },
-  { title: "Verification Status", icon: CheckSquare, to: "/app/master-data/verification-statuses", desc: "Manage certificate statuses" },
-  { title: "Roles & Permissions", icon: ShieldCheck, to: "/app/roles", desc: "Manage system access" },
-  { title: "Form Templates", icon: FileText, to: "/app/forms/builder", desc: "Manage dynamic forms" },
+  { title: "Departments", icon: Layers, to: "/app/master-data/departments", desc: "Manage academic departments" },
+  { title: "Class (Programs)", icon: Database, to: "/app/master-data/programs", desc: "Manage academic programs and classes" },
+  { title: "Sections", icon: Users, to: "/app/master-data/sections", desc: "Manage class sections" },
+  { title: "Academic Years", icon: Database, to: "/app/master-data/academic-years", desc: "Manage academic years" },
 ];
 
 function MasterDataIndex() {
