@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit3, Eye, Settings2, FileText, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Edit3, Eye, Settings2, FileText, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,7 +39,7 @@ function FormsPage() {
       <PageHeader 
         title="Form Builder" 
         description="Design dynamic forms, map them to cohorts, and set verification rules."
-        actions={<Button className="gradient-primary text-white" onClick={() => setEditing({ title: "", slug: "", status: "draft", schema: [], upload_config: { allowedTypes: ["pdf", "jpg", "png"], maxSizeMB: 5, requireSignature: false, enableOCR: false, enableAI: false, requireDeclaration: true } })}><Plus className="mr-2 h-4 w-4" /> Create Form</Button>} 
+        actions={<Button className="gradient-primary text-white" onClick={() => setEditing({ title: "", status: "draft", schema: [], upload_config: { allowedTypes: ["pdf", "jpg", "png"], maxSizeMB: 5, requireSignature: false, enableOCR: false, enableAI: false, requireDeclaration: true } })}><Plus className="mr-2 h-4 w-4" /> Create Form</Button>} 
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -48,7 +48,6 @@ function FormsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-semibold text-lg">{f.title}</h3>
-                <div className="text-xs text-muted-foreground mt-1">/{f.slug}</div>
               </div>
               <Badge variant={f.status === 'published' ? 'default' : 'outline'} className={f.status === 'published' ? 'bg-primary text-white' : ''}>
                 {f.status}
@@ -58,7 +57,7 @@ function FormsPage() {
             <div className="flex-1 space-y-2 text-sm">
               <div className="flex justify-between border-b border-border/50 pb-1">
                 <span className="text-muted-foreground">Cohort</span>
-                <span className="font-medium">{f.cohorts?.name ?? "Global"}</span>
+                <span className="font-medium">{f.cohorts?.name ?? "—"}</span>
               </div>
               <div className="flex justify-between border-b border-border/50 pb-1">
                 <span className="text-muted-foreground">Fields</span>
@@ -116,12 +115,50 @@ function FormEditor({ form, onClose, onSaved }: any) {
   const save = useMutation({
     mutationFn: async () => {
       const payload: any = { 
-        title: f.title, slug: f.slug, status: f.status, schema: f.schema, description: f.description ?? null,
+        title: f.title, status: f.status, schema: f.schema, description: f.description ?? null,
         cohort_id: f.cohort_id || null, opening_date: f.opening_date || null, closing_date: f.closing_date || null,
         max_submissions: f.max_submissions || null, upload_config: f.upload_config
       };
-      if (f.id) { const { error } = await supabase.from("forms").update(payload).eq("id", f.id); if (error) throw error; }
-      else { const { error } = await supabase.from("forms").insert(payload); if (error) throw error; }
+      if (f.id) { 
+        const { error } = await supabase.from("forms").update(payload).eq("id", f.id); 
+        if (error) throw error; 
+        
+        if (f.status === 'published' && form.status !== 'published') {
+          const query = supabase.from("students").select("profile_id");
+          if (f.cohort_id) query.eq("cohort_id", f.cohort_id);
+          const { data: students } = await query;
+          if (students && students.length > 0) {
+            const notifs = students.map(s => ({
+              user_id: s.profile_id,
+              title: `New Form: ${f.title}`,
+              body: "A new form requires your submission.",
+              link: "/app/upload",
+              category: "form_published"
+            })).filter(n => n.user_id != null);
+            if (notifs.length > 0) await supabase.from("notifications").insert(notifs);
+          }
+        }
+      } else { 
+        payload.slug = f.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 10000);
+        const { error, data } = await supabase.from("forms").insert(payload).select().single(); 
+        if (error) throw error; 
+        
+        if (f.status === 'published') {
+          const query = supabase.from("students").select("profile_id");
+          if (f.cohort_id) query.eq("cohort_id", f.cohort_id);
+          const { data: students } = await query;
+          if (students && students.length > 0) {
+            const notifs = students.map(s => ({
+              user_id: s.profile_id,
+              title: `New Form: ${f.title}`,
+              body: "A new form requires your submission.",
+              link: "/app/upload",
+              category: "form_published"
+            })).filter(n => n.user_id != null);
+            if (notifs.length > 0) await supabase.from("notifications").insert(notifs);
+          }
+        }
+      }
     },
     onSuccess: () => { toast.success("Saved"); onSaved(); onClose(); },
     onError: (e: any) => toast.error(e.message),
@@ -141,7 +178,6 @@ function FormEditor({ form, onClose, onSaved }: any) {
         <div className={activeTab === 'general' ? 'block' : 'hidden'}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="text-xs font-medium">Form Title</label><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="e.g. 2026 Semester 1 Verification" /></div>
-            <div><label className="text-xs font-medium">URL Slug</label><Input value={f.slug} onChange={(e) => setF({ ...f, slug: e.target.value.replace(/[^a-z0-9-]/gi, "-").toLowerCase() })} /></div>
             <div><label className="text-xs font-medium">Applicable Cohort</label>
               <Select value={f.cohort_id || "none"} onValueChange={(v) => setF({ ...f, cohort_id: v === "none" ? null : v })}>
                 <SelectTrigger><SelectValue placeholder="Select Cohort" /></SelectTrigger>
@@ -241,7 +277,7 @@ function FormEditor({ form, onClose, onSaved }: any) {
 
         <DialogFooter className="mt-6 border-t border-border pt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button className="gradient-primary text-white" onClick={() => save.mutate()} disabled={save.isPending || !f.title || !f.slug}>
+          <Button className="gradient-primary text-white" onClick={() => save.mutate()} disabled={save.isPending || !f.title}>
             {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Form
           </Button>
         </DialogFooter>

@@ -30,12 +30,23 @@ function CohortsList() {
   const q = useQuery({
     queryKey: ["cohorts_list"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cohorts").select(`
+      const { data: cohortsData, error } = await supabase.from("cohorts").select(`
         id, name, start_date, end_date, status, description,
-        domains (count), students (count)
+        students (count)
       `).order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Fetch domains separately to avoid PostgREST relationship ambiguity errors
+      // when the unused cohort_domains table exists in the schema.
+      const { data: domainsData } = await supabase.from("domains").select("cohort_id");
+
+      return cohortsData.map((c: any) => {
+        const domainCount = domainsData?.filter(d => d.cohort_id === c.id).length || 0;
+        return {
+          ...c,
+          domainsCount: domainCount
+        };
+      });
     },
   });
 
@@ -82,7 +93,7 @@ function CohortsList() {
                     {c.status}
                   </span>
                 </td>
-                <td className="p-4 text-center font-medium">{c.domains?.[0]?.count ?? 0}</td>
+                <td className="p-4 text-center font-medium">{c.domainsCount}</td>
                 <td className="p-4 text-center font-medium">{c.students?.[0]?.count ?? 0}</td>
                 <td className="p-4 text-right">
                   <Button variant="ghost" size="sm" onClick={() => setEditing(c)}>
@@ -113,6 +124,10 @@ function CohortEditor({ cohort, onClose, onSaved }: any) {
   const save = useMutation({
     mutationFn: async () => {
       const payload = { ...f };
+      
+      // Remove synthetic fields that don't belong in the database
+      delete payload.domainsCount;
+      delete payload.students;
       
       // If we used a month picker (YYYY-MM), pad it with -01 to become a valid date for Postgres
       if (payload.start_date && payload.start_date.length === 7) payload.start_date = `${payload.start_date}-01`;

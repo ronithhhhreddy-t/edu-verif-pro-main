@@ -42,8 +42,33 @@ function UploadPage() {
 
   const domainsQ = useQuery({ 
     queryKey: ["domains_for_cohort", cohortId], 
-    queryFn: async () => (await supabase.from("domains").select("*").eq("cohort_id", cohortId)).data ?? [],
-    enabled: !!cohortId
+    queryFn: async () => {
+      let q = supabase.from("domains").select("*");
+      if (cohortId) q = q.eq("cohort_id", cohortId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    }
+  });
+
+  const studentQ = useQuery({
+    queryKey: ["my_student_profile", me.data?.user.id],
+    queryFn: async () => {
+      if (!me.data?.user.id) return null;
+      const { data } = await supabase.from("students").select("*, departments(name)").eq("profile_id", me.data.user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!me.data?.user.id
+  });
+
+  const submissionsQ = useQuery({
+    queryKey: ["my_submissions", studentQ.data?.id],
+    queryFn: async () => {
+      if (!studentQ.data?.id) return [];
+      const { data } = await supabase.from("certificates").select("domain_id").eq("student_id", studentQ.data.id);
+      return data?.map(d => d.domain_id) ?? [];
+    },
+    enabled: !!studentQ.data?.id
   });
 
   const { register, handleSubmit, setValue, formState, watch } = useForm();
@@ -66,21 +91,27 @@ function UploadPage() {
       if (uploadConfig.requireDeclaration && !declarationChecked) throw new Error("You must agree to the declaration");
 
       if (!me.data?.user.id) throw new Error("Not signed in");
-      const student = await supabase.from("students").select("id").eq("profile_id", me.data.user.id).maybeSingle();
-      if (!student.data) throw new Error("Your student record isn't linked. Ask admin to import you.");
+      if (!studentQ.data?.id) throw new Error("Your student record isn't linked. Ask admin to import you.");
+      if (submissionsQ.data?.includes(values.domain_id)) throw new Error("You have already submitted a certificate for this domain.");
 
       const path = `${me.data.user.id}/${crypto.randomUUID()}-${file.name}`;
       const up = await supabase.storage.from("certificates").upload(path, file, { contentType: file.type });
       if (up.error) throw up.error;
       const { data: signed } = await supabase.storage.from("certificates").createSignedUrl(path, 60 * 60);
 
+      const formResponse = await supabase.from("form_responses").insert({
+        form_id: selectedForm.id,
+        student_id: studentQ.data.id,
+        submitted_by: me.data.user.id,
+        data: dynamicValues
+      });
+      if (formResponse.error) throw formResponse.error;
+
       const ins = await supabase.from("certificates").insert({
-        student_id: student.data.id,
+        student_id: studentQ.data.id,
         submitted_by: me.data.user.id,
         domain_id: values.domain_id,
         cohort_id: cohortId,
-        form_id: selectedForm.id,
-        custom_data: dynamicValues, // Store dynamic form fields in JSONB (requires schema update)
         file_url: path,
         file_mime: file.type,
         file_size: file.size,
@@ -125,6 +156,31 @@ function UploadPage() {
 
             {selectedForm && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                
+                {/* Auto-filled Student Details */}
+                {studentQ.data && (
+                  <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 space-y-4">
+                    <Label className="text-primary font-semibold border-b border-primary/10 pb-2 flex">Student Details</Label>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground text-xs">Name</div>
+                        <div className="font-medium">{studentQ.data.full_name}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground text-xs">Registration Number</div>
+                        <div className="font-medium">{studentQ.data.roll_number}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground text-xs">College Email</div>
+                        <div className="font-medium">{studentQ.data.email}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground text-xs">Department</div>
+                        <div className="font-medium">{studentQ.data.departments?.name || '-'}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground text-xs uppercase">Assigned Cohort</Label>
@@ -137,7 +193,14 @@ function UploadPage() {
                     <Select onValueChange={(v) => setValue("domain_id", v)} required>
                       <SelectTrigger className="mt-1"><SelectValue placeholder="Select Domain" /></SelectTrigger>
                       <SelectContent>
-                        {domainsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        {domainsQ.data?.map((d: any) => {
+                          const isSub = submissionsQ.data?.includes(d.id);
+                          return (
+                            <SelectItem key={d.id} value={d.id} disabled={isSub}>
+                              {d.name} {isSub && " (✓ Already Submitted)"}
+                            </SelectItem>
+                          );
+                        })}
                         {domainsQ.data?.length === 0 && <SelectItem value="none" disabled>No domains in this cohort</SelectItem>}
                       </SelectContent>
                     </Select>

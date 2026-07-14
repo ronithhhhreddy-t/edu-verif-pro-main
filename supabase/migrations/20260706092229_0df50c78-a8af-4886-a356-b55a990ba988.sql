@@ -8,7 +8,7 @@ returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at = now(); return new; end; $$;
 
 -- ============ ROLES / PERMISSIONS (fully dynamic) ============
-create table public.roles (
+create table if not exists public.roles (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   name text not null,
@@ -19,7 +19,7 @@ create table public.roles (
 );
 create trigger trg_roles_updated before update on public.roles for each row execute function public.update_updated_at_column();
 
-create table public.permissions (
+create table if not exists public.permissions (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   name text not null,
@@ -28,14 +28,14 @@ create table public.permissions (
   created_at timestamptz not null default now()
 );
 
-create table public.role_permissions (
+create table if not exists public.role_permissions (
   role_id uuid not null references public.roles(id) on delete cascade,
   permission_id uuid not null references public.permissions(id) on delete cascade,
   primary key (role_id, permission_id)
 );
 
 -- ============ PROFILES ============
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
   full_name text,
@@ -47,7 +47,7 @@ create table public.profiles (
 );
 create trigger trg_profiles_updated before update on public.profiles for each row execute function public.update_updated_at_column();
 
-create table public.user_roles (
+create table if not exists public.user_roles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   role_id uuid not null references public.roles(id) on delete cascade,
@@ -82,14 +82,14 @@ returns boolean language sql stable security definer set search_path = public as
 $$;
 
 -- ============ MASTER DATA ============
-create table public.departments (
+create table if not exists public.departments (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
   name text not null,
   created_at timestamptz not null default now()
 );
 
-create table public.programs (
+create table if not exists public.programs (
   id uuid primary key default gen_random_uuid(),
   department_id uuid references public.departments(id) on delete set null,
   code text unique not null,
@@ -97,14 +97,14 @@ create table public.programs (
   created_at timestamptz not null default now()
 );
 
-create table public.academic_years (
+create table if not exists public.academic_years (
   id uuid primary key default gen_random_uuid(),
   label text unique not null, -- e.g. 2025-2026
   is_current boolean not null default false,
   created_at timestamptz not null default now()
 );
 
-create table public.semesters (
+create table if not exists public.semesters (
   id uuid primary key default gen_random_uuid(),
   label text not null,
   academic_year_id uuid references public.academic_years(id) on delete set null,
@@ -112,7 +112,7 @@ create table public.semesters (
   created_at timestamptz not null default now()
 );
 
-create table public.companies (
+create table if not exists public.companies (
   id uuid primary key default gen_random_uuid(),
   name text unique not null,
   website text,
@@ -120,7 +120,7 @@ create table public.companies (
   created_at timestamptz not null default now()
 );
 
-create table public.domains (
+create table if not exists public.domains (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
   name text not null,
@@ -128,7 +128,7 @@ create table public.domains (
   created_at timestamptz not null default now()
 );
 
-create table public.cohorts (
+create table if not exists public.cohorts (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   academic_year_id uuid references public.academic_years(id) on delete set null,
@@ -138,14 +138,14 @@ create table public.cohorts (
   created_at timestamptz not null default now()
 );
 
-create table public.certificate_types (
+create table if not exists public.certificate_types (
   id uuid primary key default gen_random_uuid(),
   name text unique not null,
   description text
 );
 
 -- ============ STUDENTS ============
-create table public.students (
+create table if not exists public.students (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid unique references public.profiles(id) on delete set null,
   roll_number text unique not null,
@@ -169,7 +169,7 @@ create index idx_students_dept on public.students(department_id);
 create index idx_students_cohort on public.students(cohort_id);
 
 -- ============ DYNAMIC FORMS ============
-create table public.forms (
+create table if not exists public.forms (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   title text not null,
@@ -183,7 +183,7 @@ create table public.forms (
 );
 create trigger trg_forms_updated before update on public.forms for each row execute function public.update_updated_at_column();
 
-create table public.form_responses (
+create table if not exists public.form_responses (
   id uuid primary key default gen_random_uuid(),
   form_id uuid not null references public.forms(id) on delete cascade,
   submitted_by uuid references auth.users(id) on delete set null,
@@ -193,7 +193,7 @@ create table public.form_responses (
 );
 
 -- ============ CERTIFICATES ============
-create table public.certificate_templates (
+create table if not exists public.certificate_templates (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references public.companies(id) on delete set null,
   domain_id uuid references public.domains(id) on delete set null,
@@ -204,7 +204,7 @@ create table public.certificate_templates (
   created_at timestamptz not null default now()
 );
 
-create table public.certificates (
+create table if not exists public.certificates (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.students(id) on delete cascade,
   submitted_by uuid references auth.users(id) on delete set null,
@@ -234,7 +234,7 @@ create trigger trg_certs_updated before update on public.certificates for each r
 create index idx_certs_student on public.certificates(student_id);
 create index idx_certs_status on public.certificates(status);
 
-create table public.certificate_versions (
+create table if not exists public.certificate_versions (
   id uuid primary key default gen_random_uuid(),
   certificate_id uuid not null references public.certificates(id) on delete cascade,
   file_url text not null,
@@ -242,7 +242,7 @@ create table public.certificate_versions (
   created_at timestamptz not null default now()
 );
 
-create table public.verification_logs (
+create table if not exists public.verification_logs (
   id uuid primary key default gen_random_uuid(),
   certificate_id uuid not null references public.certificates(id) on delete cascade,
   actor_id uuid references auth.users(id) on delete set null,
@@ -255,7 +255,7 @@ create table public.verification_logs (
 );
 
 -- ============ NOTIFICATIONS ============
-create table public.notifications (
+create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
@@ -268,7 +268,7 @@ create table public.notifications (
 create index idx_notif_user on public.notifications(user_id, is_read);
 
 -- ============ AUDIT LOGS ============
-create table public.audit_logs (
+create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),
   actor_id uuid references auth.users(id) on delete set null,
   action text not null,
@@ -282,7 +282,7 @@ create table public.audit_logs (
 );
 
 -- ============ SETTINGS (single key-value bag) ============
-create table public.settings (
+create table if not exists public.settings (
   key text primary key,
   value jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
@@ -290,7 +290,7 @@ create table public.settings (
 );
 
 -- ============ DOCUMENT TEMPLATES ============
-create table public.document_templates (
+create table if not exists public.document_templates (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   category text,

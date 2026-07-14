@@ -20,7 +20,7 @@ function Reports() {
   const q = useQuery({
     queryKey: ["report", department, status, cohort],
     queryFn: async () => {
-      let query = supabase.from("certificates").select("id, status, ai_confidence, created_at, reviewed_at, students(full_name, roll_number, email, departments(name)), domains(name), companies(name), cohorts(name)").limit(1000).order("created_at", { ascending: false });
+      let query = supabase.from("certificates").select("id, status, created_at, reviewed_at, students(full_name, roll_number, email, departments(name)), domains(name), companies(name), cohorts(name), ai_verifications(confidence_score)").limit(1000).order("created_at", { ascending: false });
       if (status !== "all") query = query.eq("status", status);
       if (cohort !== "all") query = query.eq("cohort_id", cohort);
       const { data } = await query;
@@ -33,7 +33,10 @@ function Reports() {
   function exportCsv() {
     const rows = q.data ?? [];
     const csv = ["Roll,Name,Email,Department,Domain,Company,Cohort,Status,AI %,Submitted,Reviewed"].concat(
-      rows.map((r: any) => [r.students?.roll_number, r.students?.full_name, r.students?.email, r.students?.departments?.name, r.domains?.name, r.companies?.name, r.cohorts?.name, r.status, r.ai_confidence != null ? Math.round(r.ai_confidence * 100) : "", r.created_at, r.reviewed_at ?? ""].map((v) => `"${(v ?? "").toString().replace(/"/g, '""')}"`).join(","))
+      rows.map((r: any) => {
+        const aiConf = r.ai_verifications?.[0]?.confidence_score;
+        return [r.students?.roll_number, r.students?.full_name, r.students?.email, r.students?.departments?.name, r.domains?.name, r.companies?.name, r.cohorts?.name, r.status, aiConf != null ? Math.round(aiConf) : "", r.created_at, r.reviewed_at ?? ""].map((v) => `"${(v ?? "").toString().replace(/"/g, '""')}"`).join(",");
+      })
     ).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a"); a.href = url; a.download = "certificate-report.csv"; a.click(); URL.revokeObjectURL(url);
@@ -60,7 +63,7 @@ function Reports() {
                 <td className="p-3">{r.students?.departments?.name ?? "—"}</td>
                 <td className="p-3">{r.domains?.name ?? "—"}</td>
                 <td className="p-3">{r.companies?.name ?? "—"}</td>
-                <td className="p-3">{r.ai_confidence != null ? Math.round(r.ai_confidence * 100) + "%" : "—"}</td>
+                <td className="p-3">{r.ai_verifications?.[0]?.confidence_score != null ? Math.round(r.ai_verifications[0].confidence_score) + "%" : "—"}</td>
                 <td className="p-3"><StatusBadge status={r.status} /></td>
               </tr>
             ))}</tbody>

@@ -13,7 +13,6 @@ const MODULES = [
   { title: "Semesters", icon: Database, to: "/app/master-data/semesters", desc: "Manage semesters" },
   { title: "Cohorts", icon: Users, to: "/app/master-data/cohorts", desc: "Manage student cohorts and batches" },
   { title: "Domains", icon: Database, to: "/app/master-data/domains", desc: "Manage domains and courses" },
-  { title: "Companies", icon: Database, to: "/app/master-data/companies", desc: "Manage associated companies" },
   { title: "Certificate Types", icon: FileText, to: "/app/master-data/certificate-types", desc: "Manage certificate formats" },
   { title: "File Types", icon: UploadCloud, to: "/app/master-data/file-types", desc: "Manage allowed file uploads" },
   { title: "Student Status", icon: Users, to: "/app/master-data/student-statuses", desc: "Manage student lifecycle states" },

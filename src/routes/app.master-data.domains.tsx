@@ -25,8 +25,7 @@ function DomainsList() {
     queryKey: ["domains_list"],
     queryFn: async () => {
       const { data, error } = await supabase.from("domains").select(`
-        id, code, name, description, cohort_id, company_id, certificate_required, ai_verification_enabled, status, max_marks,
-        companies (name),
+        id, name, description, cohort_id, certificate_required, ai_verification_enabled, status,
         cohorts (name)
       `).order("created_at", { ascending: false });
       if (error) throw error;
@@ -50,8 +49,8 @@ function DomainsList() {
     <div>
       <PageHeader 
         title="Domains" 
-        description="Manage domain programs, verification rules, and company affiliations." 
-        actions={<Button className="gradient-primary text-white" onClick={() => setEditing({ status: 'Active', certificate_required: true, ai_verification_enabled: false, max_marks: 100 })}><Plus className="mr-2 h-4 w-4" /> Create Domain</Button>}
+        description="Manage domain programs and verification rules." 
+        actions={<Button className="gradient-primary text-white" onClick={() => setEditing({ status: 'Active', certificate_required: true, ai_verification_enabled: false })}><Plus className="mr-2 h-4 w-4" /> Create Domain</Button>}
       />
       <GlassCard className="p-0 overflow-hidden">
         <table className="w-full text-sm">
@@ -59,7 +58,6 @@ function DomainsList() {
             <tr>
               <th className="p-4 font-semibold">Domain Name</th>
               <th className="p-4 font-semibold">Cohort</th>
-              <th className="p-4 font-semibold">Company</th>
               <th className="p-4 font-semibold">Rules</th>
               <th className="p-4 font-semibold">Status</th>
               <th className="p-4 font-semibold text-right">Actions</th>
@@ -70,15 +68,12 @@ function DomainsList() {
               <tr key={d.id} className="transition-colors hover:bg-muted/30">
                 <td className="p-4">
                   <div className="font-medium">{d.name}</div>
-                  <div className="text-xs text-muted-foreground">{d.code}</div>
                 </td>
                 <td className="p-4 text-muted-foreground">{d.cohorts?.name ?? "—"}</td>
-                <td className="p-4 text-muted-foreground">{d.companies?.name ?? "—"}</td>
                 <td className="p-4">
                   <div className="flex flex-col gap-1 text-xs text-muted-foreground">
                     {d.certificate_required && <span>• Cert Required</span>}
                     {d.ai_verification_enabled && <span>• AI Verification</span>}
-                    <span>• {d.max_marks} Marks</span>
                   </div>
                 </td>
                 <td className="p-4">
@@ -98,7 +93,7 @@ function DomainsList() {
                 </td>
               </tr>
             ))}
-            {q.data?.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No domains found.</td></tr>}
+            {q.data?.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No domains found.</td></tr>}
           </tbody>
         </table>
       </GlassCard>
@@ -113,16 +108,13 @@ function DomainEditor({ domain, onClose, onSaved }: any) {
   const isNew = !domain.id;
 
   const cohortsQ = useQuery({ queryKey: ["cohorts_dropdown"], queryFn: async () => (await supabase.from("cohorts").select("id, name").order("name")).data ?? [] });
-  const companiesQ = useQuery({ queryKey: ["companies_dropdown"], queryFn: async () => (await supabase.from("companies").select("id, name").order("name")).data ?? [] });
 
   const save = useMutation({
     mutationFn: async () => {
       const payload = { ...f };
       delete payload.cohorts; // remove join data
-      delete payload.companies;
       
       if (!payload.cohort_id) payload.cohort_id = null;
-      if (!payload.company_id) payload.company_id = null;
       
       if (isNew) {
         const { error } = await supabase.from("domains").insert(payload);
@@ -141,11 +133,7 @@ function DomainEditor({ domain, onClose, onSaved }: any) {
       <DialogContent className="max-w-xl">
         <DialogHeader><DialogTitle>{isNew ? "Create Domain" : "Edit Domain"}</DialogTitle></DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label>Domain Code *</Label>
-            <Input className="mt-1" value={f.code || ""} onChange={e => setF({...f, code: e.target.value.toUpperCase()})} placeholder="e.g. CS-AI" />
-          </div>
-          <div>
+          <div className="sm:col-span-2">
             <Label>Domain Name *</Label>
             <Input className="mt-1" value={f.name || ""} onChange={e => setF({...f, name: e.target.value})} placeholder="e.g. Artificial Intelligence" />
           </div>
@@ -156,16 +144,6 @@ function DomainEditor({ domain, onClose, onSaved }: any) {
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
                 {cohortsQ.data?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Assign to Company</Label>
-            <Select value={f.company_id || "none"} onValueChange={v => setF({...f, company_id: v === "none" ? null : v})}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select Company" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {companiesQ.data?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -186,10 +164,6 @@ function DomainEditor({ domain, onClose, onSaved }: any) {
                 <span className="text-sm">Enable AI Verification</span>
               </label>
               <div>
-                <Label>Maximum Marks</Label>
-                <Input type="number" className="mt-1" value={f.max_marks || 100} onChange={e => setF({...f, max_marks: parseInt(e.target.value)})} />
-              </div>
-              <div>
                 <Label>Status</Label>
                 <Select value={f.status} onValueChange={v => setF({...f, status: v})}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -204,7 +178,7 @@ function DomainEditor({ domain, onClose, onSaved }: any) {
         </div>
         <DialogFooter className="mt-4 border-t border-border pt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button className="gradient-primary text-white" disabled={save.isPending || !f.name || !f.code} onClick={() => save.mutate()}>
+          <Button className="gradient-primary text-white" disabled={save.isPending || !f.name} onClick={() => save.mutate()}>
             {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Domain"}
           </Button>
         </DialogFooter>

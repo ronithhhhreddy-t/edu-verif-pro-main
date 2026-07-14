@@ -14,7 +14,7 @@ export const verifyCertificate = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: cert, error } = await supabase
       .from("certificates")
-      .select("id, file_url, file_mime, student_id, domain_id, company_id, students(full_name, roll_number), domains(name), companies(name)")
+      .select("id, file_url, file_mime, student_id, domain_id, students(full_name, roll_number), domains(name)")
       .eq("id", data.certificate_id)
       .maybeSingle();
     if (error || !cert) throw new Error("Certificate not found");
@@ -33,13 +33,12 @@ export const verifyCertificate = createServerFn({ method: "POST" })
 
     const student = (cert as any).students;
     const domainName = (cert as any).domains?.name;
-    const companyName = (cert as any).companies?.name;
 
     const systemPrompt = `You are an expert academic-credential auditor. You analyze uploaded internship / course completion certificates and return a strict JSON verdict.
 Detect: fake certificates, edited images/PDFs, mismatched names/roll numbers, wrong domain/company, missing signatures, tampering.
 Return ONLY valid JSON matching this schema:
 {
-  "extracted": { "student_name": string|null, "roll_number": string|null, "domain": string|null, "company": string|null, "certificate_id": string|null, "issue_date": string|null, "completion_date": string|null, "has_qr": boolean, "has_logo": boolean, "has_signature": boolean },
+  "extracted": { "student_name": string|null, "roll_number": string|null, "domain": string|null, "certificate_id": string|null, "issue_date": string|null, "completion_date": string|null, "has_qr": boolean, "has_logo": boolean, "has_signature": boolean },
   "confidence": number (0..1),
   "authenticity": number (0..1),
   "issues": string[],
@@ -50,7 +49,6 @@ Return ONLY valid JSON matching this schema:
     const userText = `Verify this certificate against the student record.
 Expected student: ${student?.full_name ?? "unknown"} · Roll: ${student?.roll_number ?? "unknown"}
 Expected domain: ${domainName ?? "unknown"}
-Expected company/issuer: ${companyName ?? "unknown"}
 Compare extracted OCR fields against the expected values and flag any mismatch.`;
 
     const isPdf = cert.file_mime === "application/pdf";
