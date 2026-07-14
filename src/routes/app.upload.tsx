@@ -262,7 +262,7 @@ function UploadPage() {
                       <Select value={studentDetails.academic_year_id} onValueChange={v => setStudentDetails({...studentDetails, academic_year_id: v})}>
                         <SelectTrigger className="mt-1"><SelectValue placeholder="Select Year" /></SelectTrigger>
                         <SelectContent>
-                          {yearsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                          {yearsQ.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.label || d.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
